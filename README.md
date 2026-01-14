@@ -155,19 +155,76 @@ This system enables:
 
 ---
 
-## 📄 How To Run
+## 📊 RFM Analysis Results
 
-1. Restore / create the database in SQL Server
-2. Run SQL scripts in order:
-   - Bronze
-   - Silver
-   - Gold
-   - RFM
-3. Open `RetailAnalytics.pbix`
-4. Refresh data
-5. Explore dashboards
+The RFM (Recency, Frequency, Monetary) model was applied to segment customers based on purchasing behavior and business value.
+
+Each customer was scored using quintile (1–5) scoring for:
+- **Recency**: How recently the customer purchased
+- **Frequency**: How often the customer purchases
+- **Monetary**: How much the customer spends
+
+These scores were combined using business rules to assign customers into actionable segments.
 
 ---
+
+## 🧩 Customer Segments
+
+The model produced the following business segments:
+
+- **🏆 Champions** — Most recent, most frequent, highest spenders
+- **💎 Loyal** — Frequent and high-value repeat customers
+- **🧍 Regular** — Average customers with stable behavior
+- **🆕 New Customers** — Recently acquired but not yet loyal
+- **⚠️ At Risk** — Previously good customers who are becoming inactive
+- **❌ Lost** — Inactive customers with long time since last purchase
+
+---
+
+## 💰 Revenue Contribution by Segment
+
+After correcting the RFM scoring using proper quintile distribution:
+
+| Segment        | Business Interpretation |
+|----------------|-------------------------|
+| **Champions**  | Highest revenue contributors and most valuable customers |
+| **At Risk**    | Large revenue base but declining activity — top priority for win-back |
+| **Regular**    | Stable mid-tier revenue contributors |
+| **Loyal**      | Strong recurring revenue base |
+| **New Customers** | Growing segment with upsell potential |
+| **Lost**       | Low ROI segment — minimal marketing investment recommended |
+
+---
+
+## 🧠 Strategic Insights
+
+- **Champions + Loyal** represent the core revenue engine and should be protected with loyalty programs.
+- **At Risk** customers represent a major revenue leakage risk and should be targeted with reactivation campaigns.
+- **Regular** customers are strong candidates for upsell and cross-sell.
+- **New Customers** should be nurtured into Loyal and Champions.
+- **Lost** customers should not be a primary marketing focus due to low expected ROI.
+
+---
+
+## 🏁 Business Impact
+
+This RFM model enables:
+- Data-driven marketing budget allocation
+- Customer retention prioritization
+- Churn prevention strategies
+- High-value customer identification
+- Revenue concentration analysis
+
+---
+
+## ✅ Conclusion
+
+The RFM segmentation produced a **realistic and business-actionable customer distribution**, where:
+
+> High-value segments (Champions & Loyal) drive the majority of revenue, while lower-value segments contribute significantly less — matching real-world retail behavior.
+
+This confirms both the **technical correctness** and **business credibility** of the model.
+
 
 ## 📜 License
 
