@@ -1,0 +1,139 @@
+-------------------------------------------------------------------
+--A full RFM segmentation model in SQL using window functions and business scoring logic
+-------------------------------------------------------------------
+
+DROP TABLE IF EXISTS gold.customer_rfm;
+--Create correct RFM using NTILE
+WITH base AS (
+    SELECT
+        customer_id,
+        MAX(sales_date)                         AS last_purchase_date,
+        DATEDIFF(DAY, MAX(sales_date), GETDATE()) AS recency_days,
+        COUNT(DISTINCT transaction_id)          AS frequency,
+        SUM(net_amount)                         AS monetary
+    FROM silver.fact_sales_net
+    GROUP BY customer_id
+),
+
+scored AS (
+    SELECT *,
+        NTILE(5) OVER (ORDER BY recency_days DESC) AS r_score,   -- lower recency = better → reversed
+        NTILE(5) OVER (ORDER BY frequency)         AS f_score,
+        NTILE(5) OVER (ORDER BY monetary)          AS m_score
+    FROM base
+)
+
+SELECT
+    customer_id,
+    recency_days,
+    frequency,
+    monetary,
+    last_purchase_date,
+    SYSDATETIME() AS load_timestamp,
+
+    r_score,
+    f_score,
+    m_score,
+
+    CASE
+        WHEN r_score >= 4 AND f_score >= 4 AND m_score >= 4 THEN 'Champions'
+        WHEN r_score >= 4 AND f_score >= 3 THEN 'Loyal'
+        WHEN r_score >= 4 AND f_score <= 2 THEN 'New Customers'
+        WHEN r_score BETWEEN 2 AND 3 AND f_score BETWEEN 2 AND 3 THEN 'Regular'
+        WHEN r_score <= 2 AND f_score >= 3 THEN 'At Risk'
+        ELSE 'Lost'
+    END AS rfm_segment
+
+INTO gold.customer_rfm
+FROM scored;
+
+--Validate scoring worked
+SELECT
+    r_score, f_score, m_score, COUNT(*) AS cnt
+FROM gold.customer_rfm
+GROUP BY r_score, f_score, m_score
+ORDER BY 1,2,3;
+
+--Check segment distribution
+SELECT rfm_segment, COUNT(*) AS customers
+FROM gold.customer_rfm
+GROUP BY rfm_segment
+ORDER BY customers DESC;
+
+--The REAL business query: who drives money?
+SELECT
+    rfm_segment,
+    COUNT(*)                    AS customers,
+    SUM(monetary)               AS total_revenue,
+    AVG(monetary)               AS avg_revenue_per_customer
+FROM gold.customer_rfm
+GROUP BY rfm_segment
+ORDER BY total_revenue DESC;
+
+SELECT
+    rfm_segment,
+    COUNT(*)                    AS customers,
+    SUM(monetary)               AS total_revenue,
+    AVG(monetary)               AS avg_revenue_per_customer
+FROM gold.customer_rfm
+GROUP BY rfm_segment
+ORDER BY avg_revenue_per_customer DESC;
+
+SELECT * FROM gold.customer_rfm;
+
+SELECT rfm_segment, SUM(monetary) FROM gold.customer_rfm GROUP BY rfm_segment;
+
+
+--------------------------------------------
+    --Executive Questions RFM Answers
+
+--1 Where should we spend our marketing budget?
+
+--2 Who should get loyalty rewards?
+
+--3 Who is at risk of leaving?
+
+--4 Which customers drive profit?
+
+--5 How healthy is our customer base?
+--------------------------------------------
+
+--1 Where should we spend our marketing budget?
+-------------------------------------------
+
+-------------------------------------------
+SELECT
+    rfm_segment,
+    COUNT(*)           AS customers,
+    SUM(monetary)      AS total_revenue
+FROM gold.customer_rfm
+GROUP BY rfm_segment
+ORDER BY total_revenue DESC;
+
+
+--Who should get loyalty rewards?
+SELECT TOP 50 *
+FROM gold.customer_rfm
+WHERE rfm_segment IN ('Champions', 'Loyal Customers')
+ORDER BY monetary DESC;
+
+--Who is at risk of leaving?
+SELECT *
+FROM gold.customer_rfm
+WHERE rfm_segment = 'At Risk'
+ORDER BY recency_days DESC;
+
+--Which customers drive profit?
+SELECT TOP 20 *
+FROM gold.customer_rfm
+ORDER BY monetary DESC;
+
+--How healthy is our customer base?
+SELECT
+    rfm_segment,
+    COUNT(*) AS customers
+FROM gold.customer_rfm
+GROUP BY rfm_segment
+ORDER BY customers DESC;
+
+
